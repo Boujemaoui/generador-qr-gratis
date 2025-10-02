@@ -128,6 +128,8 @@
             background: white;
             border-radius: 10px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            min-height: 240px;
+            min-width: 240px;
         }
 
         .watermark-notice {
@@ -206,6 +208,19 @@
             border-top: 1px solid #dee2e6;
         }
 
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .error {
+            color: #dc3545;
+            background: #ffe6e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 2em;
@@ -258,7 +273,9 @@
                 <h2>¡Tu QR está Listo! 🎉</h2>
                 
                 <div class="qr-preview">
-                    <div id="qrcode"></div>
+                    <div id="qrcode">
+                        <p class="loading">El QR aparecerá aquí...</p>
+                    </div>
                 </div>
 
                 <div class="watermark-notice">
@@ -282,7 +299,6 @@
                 <div class="cpa-section" id="cpaSection">
                     <h3>¡Perfecto! Completa esta oferta rápida:</h3>
                     <div id="offerContainer">
-                        <!-- Aquí va tu iframe/enlace CPA -->
                         <p style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 5px;">
                             🔄 Cargando oferta especial...
                         </p>
@@ -304,65 +320,79 @@
         </div>
     </div>
 
-    <!-- Script QRCode desde CDN alternativo -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    
     <script>
-        // Función mejorada y robusta para generar QR
+        // Función principal que SÍ funciona
         function generateQR() {
-            console.log("🔹 Iniciando generación de QR...");
+            console.log("🚀 Iniciando generación de QR...");
             
             const text = document.getElementById('qrText').value.trim();
-            console.log("🔹 Texto ingresado:", text);
+            const qrContainer = document.getElementById('qrcode');
             
             if (!text) {
                 alert('Por favor, ingresa una URL o texto para generar el QR');
                 return;
             }
 
-            // Limpiar QR anterior y mostrar loading
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '<p>🔄 Generando QR...</p>';
+            // Mostrar loading
+            qrContainer.innerHTML = '<p class="loading">🔄 Generando código QR...</p>';
             
-            // Verificar si la biblioteca QRCode está cargada
-            if (typeof QRCode === 'undefined') {
-                console.error('❌ QRCode no está cargado');
-                qrContainer.innerHTML = '<p style="color: red;">❌ Error: Biblioteca QR no disponible. Recarga la página.</p>';
-                return;
-            }
-
-            try {
-                // Crear elemento para el QR
-                const qrElement = document.createElement('div');
+            // Usar API externa confiable para generar QR
+            const encodedText = encodeURIComponent(text);
+            
+            // API 1: QR Server API (muy confiable)
+            const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodedText}&format=png&margin=10`;
+            
+            // Crear imagen del QR
+            const qrImage = new Image();
+            qrImage.onload = function() {
+                // QR generado exitosamente
                 qrContainer.innerHTML = '';
-                qrContainer.appendChild(qrElement);
+                qrContainer.appendChild(qrImage);
                 
-                // Generar QR usando la biblioteca
-                new QRCode(qrElement, {
-                    text: text,
-                    width: 200,
-                    height: 200,
-                    colorDark: "#000000",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-
-                console.log('✅ QR generado exitosamente!');
-                
-                // Mostrar resultados
+                // Mostrar sección de resultados
                 document.getElementById('qrResult').style.display = 'block';
                 document.getElementById('cpaSection').style.display = 'none';
                 document.getElementById('downloadBtn').style.display = 'none';
+                
+                console.log('✅ QR generado exitosamente!');
                 
                 // Scroll suave a los resultados
                 document.getElementById('qrResult').scrollIntoView({ 
                     behavior: 'smooth' 
                 });
+            };
+            
+            qrImage.onerror = function() {
+                // Fallback si la primera API falla
+                console.log('🔄 API 1 falló, intentando API 2...');
+                useFallbackAPI(text, qrContainer);
+            };
+            
+            qrImage.src = qrImageUrl;
+        }
 
-            } catch (error) {
-                console.error('❌ Error generando QR:', error);
-                qrContainer.innerHTML = '<p style="color: red;">❌ Error al generar el QR: ' + error.message + '</p>';
-            }
+        // Función de respaldo con otra API
+        function useFallbackAPI(text, qrContainer) {
+            const encodedText = encodeURIComponent(text);
+            
+            // API 2: GoQR.me (fallback)
+            const fallbackUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodedText}&size=200x200`;
+            
+            const fallbackImage = new Image();
+            fallbackImage.onload = function() {
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(fallbackImage);
+                document.getElementById('qrResult').style.display = 'block';
+                console.log('✅ QR generado con API de respaldo!');
+            };
+            
+            fallbackImage.onerror = function() {
+                // Si ambas APIs fallan
+                qrContainer.innerHTML = '<p class="error">❌ Error: No se pudo generar el QR. Intenta con otra URL o recarga la página.</p>';
+                console.error('❌ Todas las APIs fallaron');
+            };
+            
+            fallbackImage.src = fallbackUrl;
         }
 
         function showPremiumOffer() {
@@ -378,7 +408,7 @@
                     <h4>🎁 Oferta Especial Disponible</h4>
                     <p>Completa esta oferta rápida para desbloquear tu QR premium</p>
                     <!-- REEMPLAZA ESTE ENLACE CON TU CPA REAL -->
-                    <a href="https://www.ejemplo.com" target="_blank" 
+                    <a href="TU_ENLACE_CPA_AQUI" target="_blank" 
                        style="display: inline-block; padding: 15px 30px; background: #007bff; color: white; 
                               text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px;">
                         🚀 Acceder a Oferta Gratuita
@@ -393,15 +423,15 @@
             setTimeout(() => {
                 document.getElementById('downloadBtn').style.display = 'block';
                 offerContainer.innerHTML += '<p style="color: green; margin-top: 15px;">✅ ¡Oferta completada! Ya puedes descargar tu QR premium.</p>';
-            }, 8000); // 8 segundos para simular
+            }, 8000);
         }
 
         function downloadPremiumQR() {
-            const canvas = document.querySelector('#qrcode canvas');
-            if (canvas) {
+            const qrImage = document.querySelector('#qrcode img');
+            if (qrImage && qrImage.src) {
                 const link = document.createElement('a');
                 link.download = `qr-premium-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = qrImage.src;
                 link.click();
                 
                 alert('✅ ¡QR premium descargado! Gracias por usar nuestro servicio.');
@@ -411,11 +441,11 @@
         }
 
         function downloadWatermarkedQR() {
-            const canvas = document.querySelector('#qrcode canvas');
-            if (canvas) {
+            const qrImage = document.querySelector('#qrcode img');
+            if (qrImage && qrImage.src) {
                 const link = document.createElement('a');
                 link.download = `qr-basico-${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.href = qrImage.src;
                 link.click();
             } else {
                 alert('❌ Primero genera un QR antes de descargar');
@@ -430,9 +460,7 @@
             }
         });
 
-        // Verificar que todo esté cargado
-        console.log("✅ Script cargado correctamente");
-        console.log("✅ QRCode library disponible:", typeof QRCode !== 'undefined');
+        console.log("✅ Generador de QR cargado y listo!");
     </script>
 </body>
 </html>
