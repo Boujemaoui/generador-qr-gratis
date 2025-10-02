@@ -304,59 +304,83 @@
         </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Script QRCode desde CDN alternativo -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
     <script>
+        // Función mejorada y robusta para generar QR
         function generateQR() {
+            console.log("🔹 Iniciando generación de QR...");
+            
             const text = document.getElementById('qrText').value.trim();
+            console.log("🔹 Texto ingresado:", text);
+            
             if (!text) {
                 alert('Por favor, ingresa una URL o texto para generar el QR');
                 return;
             }
 
-            // Limpiar QR anterior
-            document.getElementById('qrcode').innerHTML = '';
+            // Limpiar QR anterior y mostrar loading
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '<p>🔄 Generando QR...</p>';
             
-            // Generar nuevo QR
-            QRCode.toCanvas(document.getElementById('qrcode'), text, {
-                width: 200,
-                height: 200,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                margin: 1
-            }, function(error) {
-                if (error) {
-                    console.error(error);
-                    alert('Error al generar el QR. Intenta con otro texto.');
-                    return;
-                }
+            // Verificar si la biblioteca QRCode está cargada
+            if (typeof QRCode === 'undefined') {
+                console.error('❌ QRCode no está cargado');
+                qrContainer.innerHTML = '<p style="color: red;">❌ Error: Biblioteca QR no disponible. Recarga la página.</p>';
+                return;
+            }
+
+            try {
+                // Crear elemento para el QR
+                const qrElement = document.createElement('div');
+                qrContainer.innerHTML = '';
+                qrContainer.appendChild(qrElement);
+                
+                // Generar QR usando la biblioteca
+                new QRCode(qrElement, {
+                    text: text,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                console.log('✅ QR generado exitosamente!');
                 
                 // Mostrar resultados
                 document.getElementById('qrResult').style.display = 'block';
                 document.getElementById('cpaSection').style.display = 'none';
                 document.getElementById('downloadBtn').style.display = 'none';
                 
-                // Scroll a los resultados
+                // Scroll suave a los resultados
                 document.getElementById('qrResult').scrollIntoView({ 
                     behavior: 'smooth' 
                 });
-            });
+
+            } catch (error) {
+                console.error('❌ Error generando QR:', error);
+                qrContainer.innerHTML = '<p style="color: red;">❌ Error al generar el QR: ' + error.message + '</p>';
+            }
         }
 
         function showPremiumOffer() {
+            console.log("🎯 Mostrando oferta premium...");
+            
             // Mostrar sección CPA
             document.getElementById('cpaSection').style.display = 'block';
             
-            // Aquí integras tu oferta CPA
+            // Integrar oferta CPA
             const offerContainer = document.getElementById('offerContainer');
             offerContainer.innerHTML = `
                 <div style="text-align: center; padding: 20px;">
-                    <h4>Oferta Especial Disponible</h4>
+                    <h4>🎁 Oferta Especial Disponible</h4>
                     <p>Completa esta oferta rápida para desbloquear tu QR premium</p>
                     <!-- REEMPLAZA ESTE ENLACE CON TU CPA REAL -->
-                    <a href="TU_ENLACE_CPA_AQUI" target="_blank" 
+                    <a href="https://www.ejemplo.com" target="_blank" 
                        style="display: inline-block; padding: 15px 30px; background: #007bff; color: white; 
-                              text-decoration: none; border-radius: 5px; font-weight: bold;">
+                              text-decoration: none; border-radius: 5px; font-weight: bold; margin: 10px;">
                         🚀 Acceder a Oferta Gratuita
                     </a>
                     <p style="font-size: 12px; margin-top: 10px; color: #666;">
@@ -365,17 +389,14 @@
                 </div>
             `;
             
-            // Simular verificación de oferta completada (en realidad esto lo haría tu red CPA)
+            // Simular verificación de oferta completada
             setTimeout(() => {
                 document.getElementById('downloadBtn').style.display = 'block';
-            }, 15000); // Mostrar botón después de 15 segundos (simulación)
+                offerContainer.innerHTML += '<p style="color: green; margin-top: 15px;">✅ ¡Oferta completada! Ya puedes descargar tu QR premium.</p>';
+            }, 8000); // 8 segundos para simular
         }
 
         function downloadPremiumQR() {
-            const text = document.getElementById('qrText').value.trim();
-            if (!text) return;
-            
-            // Crear QR premium (sin marca de agua)
             const canvas = document.querySelector('#qrcode canvas');
             if (canvas) {
                 const link = document.createElement('a');
@@ -384,17 +405,20 @@
                 link.click();
                 
                 alert('✅ ¡QR premium descargado! Gracias por usar nuestro servicio.');
+            } else {
+                alert('❌ Primero genera un QR antes de descargar');
             }
         }
 
         function downloadWatermarkedQR() {
             const canvas = document.querySelector('#qrcode canvas');
             if (canvas) {
-                // Aquí podrías añadir una marca de agua real al canvas
                 const link = document.createElement('a');
                 link.download = `qr-basico-${Date.now()}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+            } else {
+                alert('❌ Primero genera un QR antes de descargar');
             }
             return false;
         }
@@ -405,6 +429,10 @@
                 generateQR();
             }
         });
+
+        // Verificar que todo esté cargado
+        console.log("✅ Script cargado correctamente");
+        console.log("✅ QRCode library disponible:", typeof QRCode !== 'undefined');
     </script>
 </body>
 </html>
